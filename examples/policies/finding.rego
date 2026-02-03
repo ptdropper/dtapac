@@ -1,74 +1,36 @@
 package dtapac.finding
 
+# Default: return empty {} if no match (dtapac sees this as "no decision")
 default analysis = {}
 
-analysis = res if {
-	# Suppress all vulnerabilities matching a specific pattern.
-	# In this case, OSS Index changed its naming scheme for their own
-	# vulnerabilities, effectively making the old vulns obsolete.
+# Debug: return the entire input for inspection
+debug_input = input
 
-	regex.match("^[a-f\\d]{8}-[a-f\\d]{4}-[a-f\\d]{4}-[a-f\\d]{4}-[a-f\\d]{12}$", input.vulnerability.vulnId)
-	input.vulnerability.source == "OSSINDEX"
-
-	res := {
-		"state": "RESOLVED",
-		"details": "Legacy OSS Index vulnerability, see https://ossindex.sonatype.org/updates-notice.",
-		"suppress": true,
-	}
-} else = res if {
-	# Suppress duplicate vulnerabilities.
-	# This can happen when different sources report the same vulnerability
-	# under different vulnerability identifiers. Utilize a mapping to be able
-	# to include which vulnerability is duplicated in the analysis details.
-
-	duplicatedVuln := {
-		"GHSA-57j2-w4cx-62h2": "CVE-2020-36518",
-		"GHSA-r695-7vr9-jgc2": "CVE-2020-36187",
-		"GHSA-vfqx-33qm-g869": "CVE-2020-36189",
-	}[input.vulnerability.vulnId]
-
-	res := {
-		"state": "RESOLVED",
-		"details": sprintf("Duplicate of %s.", [duplicatedVuln]),
-		"suppress": true,
-	}
-} else = res if {
-	# Suppress false positives for a specific component.
-
-	input.component.group == "org.apache.camel"
-	input.component.name == "camel-jetty9"
-	input.vulnerability.vulnId == "CVE-2019-0188"
-
-	res := {
-		"state": "FALSE_POSITIVE",
-		"details": "Affects camel-xmljson, but not camel-jetty9.",
-		"suppress": true,
-	}
-} else = res if {
-	# Suppress all vulnerabilities in h2 for a selection of specific projects.
-	# These projects are using h2 only in unit tests and the devs convinced
-	# the security team that ignoring vulns in it is acceptable.
-
-	input.project.name == ["Flux Capacitor", "Mr. Robot"][_]
-	input.component.group == "com.h2database"
-	input.component.name == "h2"
-
-	res := {
-		"state": "NOT_AFFECTED",
-		"justification": "CODE_NOT_REACHABLE",
-		"details": "h2 is only used in unit tests.",
-		"suppress": true,
-	}
-} else = res if {
-	# The security team got PTSD from multiple log4shell incidents
-	# and they're not willing to take any risks anymore.
-
-	input.component.name == "log4j-core"
-	input.vulnerability.vulnId == "CVE-2021-44228"
-
-	res := {
-		"state": "EXPLOITABLE",
-		"comment": "Update immediately!",
-		"suppress": false,
-	}
+analysis = {
+    "state": "NOT_AFFECTED",
+    "justification": "PROTECTED_BY_COMPILER",
+    "details": "This finding can be captured by normal testing, has not be observed in testing.",
+    "comment": "No action necessary",
+    "suppress": true
+} if {
+    input.project.name in ["APEX Control Panel", "Pinnacle Control Panel"]
+    input.vulnerability.vulnId == "CVE-2007-3205"
+} else = {
+    "state": "NOT_AFFECTED",
+    "justification": "REQUIRES_ENVIRONMENT",
+    "details": "APEX ControlPanel 64 bit CPU architecture not impacted",
+    "comment": "Not applicable",
+    "suppress": true
+} if {
+    input.project.name == "APEX Control Panel"
+    input.vulnerability.vulnId == "CVE-2024-11236"
+} else = {
+    "state": "NOT_AFFECTED",
+    "justification": "PROTECTED_AT_PERIMETER",
+    "details": "Customer configuration required to enable an insecure internet.",
+    "comment": "Not applicable",
+    "suppress": true
+} if {
+    input.project.name == "APEX Control Panel"
+    input.vulnerability.vulnId == "CVE-2024-11234"
 }

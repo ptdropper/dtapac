@@ -39,7 +39,7 @@ test-example-policies:
 .PHONY: test-example-policies
 
 build-example-bundle:
-	opa build -o ./examples/bundles/dtapac.tar.gz -r $(shell date | sha256sum | cut -d ' ' -f 1) ./examples/policies
+	opa build -b -o ./examples/bundles/dtapac.tar.gz -r $(shell date | sha256sum | cut -d ' ' -f 1) ./examples/policies
 .PHONY: example-bundle
 
 all: clean build test docker
